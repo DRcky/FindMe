@@ -24,16 +24,20 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-     // Mostrar formulario para elegir especialidad
-    
+    // Mostrar formulario para elegir especialidad
 
+    Route::get('/workers/become', [WorkerController::class, 'create'])
+        ->name('workers.become.create');
+
+    Route::middleware('auth')->get('/workers/map', fn() => inertia('Workers/NearbyMap'))
+        ->name('workers.map');
+        
     // Guardar: convertir a trabajador
     Route::post('/workers/become', [WorkerController::class, 'store'])
         ->name('workers.become.store');
 });
 
-Route::get('/workers/become', [WorkerController::class, 'create'])
-        ->name('workers.become.create');
 
 
-require __DIR__.'/auth.php';
+
+require __DIR__ . '/auth.php';

@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\GeoController;
+use App\Http\Controllers\WorkerNearbyController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -17,6 +18,8 @@ use App\Http\Controllers\GeoController;
 
 Route::get('/reverse-geocode', [GeoController::class, 'reverse'])
     ->name('api.reverse');
+
+Route::get('/nearby-workers', [WorkerNearbyController::class, 'index'])->name('api.nearby-workers');
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();

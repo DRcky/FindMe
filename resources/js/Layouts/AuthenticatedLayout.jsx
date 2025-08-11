@@ -30,6 +30,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Dashboard
                                 </NavLink>
+                                <NavLink
+                                    href={route('workers.map')}
+                                    active={route().current('workers.map')}
+                                >
+                                    Ver trabajadores cercanos
+                                </NavLink>
                             </div>
                         </div>
 
