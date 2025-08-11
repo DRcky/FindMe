@@ -11,12 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('reviews', function (Blueprint $table) {
+       Schema::create('jobs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete()->cascadeOnUpdate();
-            $table->foreignId('worker_id')->constrained('workers')->cascadeOnDelete()->cascadeOnUpdate();
-            $table->tinyInteger('rating')->checkBetween(1, 5);
-            $table->text('comment')->nullable();
+            $table->foreignId('contract_id')->constrained('contracts')->cascadeOnDelete()->cascadeOnUpdate();
+            $table->text('description');
         });
     }
 
