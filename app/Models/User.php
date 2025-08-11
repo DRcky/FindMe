@@ -18,7 +18,18 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'first_name','last_name','email','password','phone','location_id'
+        'first_name',
+        'last_name',
+        'phone',
+        'email',
+        'password',
+        'country',
+        'province',
+        'city',
+        'latitude',
+        'longitude',
+        'accuracy_m',
+        'last_seen_at',
     ];
 
     /**
@@ -31,7 +42,8 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    public function location() {
+    public function location()
+    {
         return $this->belongsTo(Location::class);
     }
 
@@ -44,7 +56,11 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'last_seen_at'      => 'datetime',
+            'password'          => 'hashed',
+            'latitude'          => 'decimal:7',
+            'longitude'         => 'decimal:7',
+            'accuracy_m'        => 'decimal:2',
         ];
     }
 }

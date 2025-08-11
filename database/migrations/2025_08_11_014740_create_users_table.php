@@ -14,25 +14,32 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
 
-            // Campos personalizados
+            // Datos personales
             $table->string('first_name', 50);
             $table->string('last_name', 50)->nullable();
-            $table->string('phone', 15)->nullable();
+            $table->string('phone', 20)->nullable(); // pon unique() si lo quieres único
 
-            // Relación con locations
-            $table->foreignId('location_id')
-                ->nullable()
-                ->constrained('locations')
-                ->nullOnDelete()
-                ->cascadeOnUpdate();
-
-            // Campos estándar de Laravel Breeze
+            // Autenticación
             $table->string('email', 100)->unique();
             $table->string('password');
             $table->rememberToken();
 
-            // Timestamps estándar
-            $table->timestamps();
+            // Ubicación exacta (inline)
+            $table->string('country', 100)->nullable();
+            $table->string('province', 100)->nullable();   // estado/provincia
+            $table->string('city', 120)->nullable();
+
+            // Coordenadas precisas (≈10 cm con 7 decimales)
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
+            $table->decimal('accuracy_m', 8, 2)->nullable(); // precisión reportada por el GPS
+            $table->timestamp('last_seen_at')->nullable();
+
+            // Índices útiles
+            $table->index(['latitude', 'longitude']);              // para consultas por cercanía
+            $table->index(['country', 'province', 'city']);        // filtros por texto
+
+            $table->timestamps(); // created_at, updated_at
         });
     }
 

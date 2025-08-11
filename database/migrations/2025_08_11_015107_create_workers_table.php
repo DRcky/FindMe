@@ -16,7 +16,6 @@ return new class extends Migration
             $table->enum('status', ['Active', 'Inactive'])->default('Active');
             $table->foreignId('user_id')->nullable()->constrained('users')->cascadeOnDelete()->cascadeOnUpdate();
             $table->foreignId('specialty_id')->nullable()->constrained('specialties')->nullOnDelete()->cascadeOnUpdate();
-            $table->foreignId('location_id')->nullable()->constrained('locations')->nullOnDelete()->cascadeOnUpdate();
         });
     }
 
