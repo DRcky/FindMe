@@ -68,7 +68,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                             Perfil
                                         </Dropdown.Link>
 
-                                        <a href={route('workers.become.create')}>Convertirme</a>
+
+
+                                        <Dropdown.Link href={route('workers.become.create')}>
+                                            Conviertete en trabajador
+                                        </Dropdown.Link>
+
+
+
 
                                         <Dropdown.Link
                                             href={route('logout')}
