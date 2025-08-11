@@ -31,15 +31,21 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'first_name' => ['required', 'string', 'max:50'],
+            'last_name'  => ['nullable', 'string', 'max:50'],
+            'phone'      => ['nullable', 'string', 'max:15'],
+            'location_id' => ['nullable', 'exists:locations,id'],
+            'email'      => ['required', 'string', 'lowercase', 'email', 'max:100', 'unique:users,email'],
+            'password'   => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+            'first_name'  => $request->first_name,
+            'last_name'   => $request->last_name,
+            'phone'       => $request->phone,
+            'location_id' => $request->location_id,
+            'email'       => $request->email,
+            'password'    => $request->password, // Breeze ya usa cast hashed si lo configuras
         ]);
 
         event(new Registered($user));
