@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WorkerController;
+use App\Models\Specialty;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -37,7 +38,11 @@ Route::middleware('auth')->group(function () {
         ->name('workers.become.store');
 });
 
-
+Route::middleware('auth')->get('/workers/map', function () {
+    return inertia('Workers/NearbyMap', [
+        'specialties' => Specialty::orderBy('name')->get(['id','name']),
+    ]);
+})->name('workers.map');
 
 
 require __DIR__ . '/auth.php';

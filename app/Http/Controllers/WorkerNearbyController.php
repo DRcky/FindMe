@@ -12,56 +12,55 @@ class WorkerNearbyController extends Controller
 {
     public function index(Request $request)
     {
-        try {
-            $request->validate([
-                'lat'    => ['required','numeric','between:-90,90'],
-                'lng'    => ['required','numeric','between:-180,180'],
-                'radius' => ['nullable','numeric','min:0'],
-            ]);
+        $request->validate([
+            'lat'          => ['required', 'numeric', 'between:-90,90'],
+            'lng'          => ['required', 'numeric', 'between:-180,180'],
+            'radius'       => ['nullable', 'numeric', 'min:0'],
+            'specialty_id' => ['nullable', 'integer', 'exists:specialties,id'],
+        ]);
 
-            $lat = (float) $request->lat;
-            $lng = (float) $request->lng;
-            $radiusKm = (float) ($request->radius ?? 5);
+        $lat = (float) $request->lat;
+        $lng = (float) $request->lng;
+        $radiusKm = (float) ($request->radius ?? 5);
+        $specialtyId = $request->specialty_id;
 
-            // IMPORTANTE: asegúrate que users.latitude/longitude EXISTEN y son DECIMAL
-            $haversine = "(6371 * acos(
-                cos(radians(?)) * cos(radians(users.latitude)) *
-                cos(radians(users.longitude) - radians(?)) +
-                sin(radians(?)) * sin(radians(users.latitude))
-            ))";
+        $haversine = "(6371 * acos(
+        cos(radians(?)) * cos(radians(users.latitude)) *
+        cos(radians(users.longitude) - radians(?)) +
+        sin(radians(?)) * sin(radians(users.latitude))
+    ))";
 
-            $workers = Worker::query()
-                ->join('users', 'users.id', '=', 'workers.user_id')
-                ->leftJoin('specialties', 'specialties.id', '=', 'workers.specialty_id')
-                ->whereNotNull('users.latitude')
-                ->whereNotNull('users.longitude')
-                ->whereBetween('users.latitude', [-90, 90])
-                ->whereBetween('users.longitude', [-180, 180])
-                ->select([
-                    'workers.id as worker_id',
-                    'workers.status',
-                    'users.id as user_id',
-                    'users.first_name',
-                    'users.last_name',
-                    'users.phone',
-                    'users.email',
-                    'users.city',
-                    'users.province',
-                    'users.country',
-                    'users.latitude',
-                    'users.longitude',
-                    'specialties.name as specialty',
-                ])
-                ->selectRaw("$haversine AS distance", [$lat, $lng, $lat])
-                ->having('distance', '<=', $radiusKm)
-                ->orderBy('distance')
-                ->limit(400)
-                ->get();
+        $q = \App\Models\Worker::query()
+            ->join('users', 'users.id', '=', 'workers.user_id')
+            ->leftJoin('specialties', 'specialties.id', '=', 'workers.specialty_id')
+            ->whereNotNull('users.latitude')
+            ->whereNotNull('users.longitude');
 
-            return response()->json($workers);
-        } catch (\Throwable $e) {
-            Log::error('nearby-workers error', ['msg' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return response()->json(['message' => 'Server error: '.$e->getMessage()], 500);
+        if ($specialtyId) {
+            $q->where('workers.specialty_id', $specialtyId);
         }
+
+        $workers = $q->select([
+            'workers.id as worker_id',
+            'workers.status',
+            'users.id as user_id',
+            'users.first_name',
+            'users.last_name',
+            'users.phone',
+            'users.email',
+            'users.city',
+            'users.province',
+            'users.country',
+            'users.latitude',
+            'users.longitude',
+            'specialties.name as specialty',
+        ])
+            ->selectRaw("$haversine AS distance", [$lat, $lng, $lat])
+            ->having('distance', '<=', $radiusKm)
+            ->orderBy('distance')
+            ->limit(400)
+            ->get();
+
+        return response()->json($workers);
     }
 }

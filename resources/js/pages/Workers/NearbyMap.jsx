@@ -1,3 +1,4 @@
+// resources/js/Pages/Workers/NearbyMap.jsx
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
@@ -11,15 +12,16 @@ import shadow from 'leaflet/dist/images/marker-shadow.png';
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({ iconRetinaUrl: marker2x, iconUrl: marker, shadowUrl: shadow });
 
-export default function NearbyMap({ auth }) {
+export default function NearbyMap({ auth, specialties = [] }) {
   const mapRef = useRef(null);
   const markersLayerRef = useRef(null);
   const circleRef = useRef(null);
   const userMarkerRef = useRef(null);
   const markersIndexRef = useRef(new Map()); // worker_id -> marker
 
-  const [center, setCenter] = useState({ lat: 18.4861, lng: -69.9312 });
+  const [center, setCenter] = useState({ lat: 18.4861, lng: -69.9312 }); // Santo Domingo por defecto
   const [radiusKm, setRadiusKm] = useState(5);
+  const [specialtyId, setSpecialtyId] = useState(''); // '' = todas
   const [loadingLoc, setLoadingLoc] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [error, setError] = useState('');
@@ -47,6 +49,7 @@ export default function NearbyMap({ auth }) {
 
     userMarkerRef.current = L.marker([center.lat, center.lng]).addTo(map).bindPopup('Estás aquí');
 
+    // Permitir cambiar el centro con click
     map.on('click', (e) => {
       setCenter({ lat: e.latlng.lat, lng: e.latlng.lng });
     });
@@ -58,22 +61,33 @@ export default function NearbyMap({ auth }) {
     };
   }, []);
 
-  // Reaccionar a cambios de centro/radio
+  // Reaccionar a cambios de centro y radio
   useEffect(() => {
     if (!mapRef.current) return;
+    const map = mapRef.current;
 
-    // mover marcador del usuario
+    // Mover marcador de usuario
     userMarkerRef.current?.setLatLng([center.lat, center.lng]);
-    // actualizar círculo
-    circleRef.current?.setLatLng([center.lat, center.lng]).setRadius(radiusKm * 1000);
-    // centrar
-    mapRef.current.setView([center.lat, center.lng], mapRef.current.getZoom(), { animate: true });
 
-    // cargar trabajadores
-    fetchWorkers(center.lat, center.lng, radiusKm);
+    // Actualizar círculo
+    circleRef.current?.setLatLng([center.lat, center.lng]).setRadius(radiusKm * 1000);
+
+    // Centrar
+    map.setView([center.lat, center.lng], map.getZoom(), { animate: true });
+
+    // Cargar trabajadores
+    fetchWorkers(center.lat, center.lng, radiusKm, specialtyId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [center.lat, center.lng, radiusKm]);
 
+  // Reaccionar a cambios de especialidad
+  useEffect(() => {
+    if (!mapRef.current) return;
+    fetchWorkers(center.lat, center.lng, radiusKm, specialtyId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [specialtyId]);
+
+  // Geolocalizar
   const useMyLocation = () => {
     setError('');
     if (!navigator.geolocation) {
@@ -94,30 +108,38 @@ export default function NearbyMap({ auth }) {
     );
   };
 
-  const fetchWorkers = async (lat, lng, rKm) => {
+  // Traer workers y pintarlos
+  const fetchWorkers = async (lat, lng, rKm, specId) => {
     setLoadingData(true);
     setError('');
     try {
-      const res = await fetch(`/api/nearby-workers?lat=${lat}&lng=${lng}&radius=${rKm}`);
+      const params = new URLSearchParams({
+        lat: String(lat),
+        lng: String(lng),
+        radius: String(rKm),
+      });
+      if (specId) params.set('specialty_id', specId);
+
+      const res = await fetch(`/api/nearby-workers?${params.toString()}`);
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(txt || `HTTP ${res.status}`);
       }
       const data = await res.json();
 
-      // limpiar markers anteriores
+      // Limpiar markers anteriores
       markersLayerRef.current.clearLayers();
       markersIndexRef.current.clear();
 
-      // ordenar por distancia y guardar
+      // Ordenar y setear lista
       data.sort((a, b) => (a.distance ?? 0) - (b.distance ?? 0));
       setWorkers(data);
 
-      // pintar markers y llenar índice (worker_id -> marker)
+      // Pintar markers y llenar índice
       data.forEach((w) => {
         if (w.latitude == null || w.longitude == null) return;
-        const m = L.marker([w.latitude, w.longitude]);
-        const html = `
+
+        const popupHtml = `
           <div style="font-size: 12px; line-height: 1.2;">
             <div style="font-weight: 600;">${(w.first_name ?? '')} ${(w.last_name ?? '')}</div>
             ${w.specialty ? `<div>${w.specialty}</div>` : ''}
@@ -126,7 +148,8 @@ export default function NearbyMap({ auth }) {
             ${w.phone ? `<div>Tel: ${w.phone}</div>` : ''}
           </div>
         `;
-        m.bindPopup(html);
+
+        const m = L.marker([w.latitude, w.longitude]).bindPopup(popupHtml);
         m.addTo(markersLayerRef.current);
         markersIndexRef.current.set(w.worker_id, m);
       });
@@ -174,6 +197,22 @@ export default function NearbyMap({ auth }) {
             />
           </label>
 
+          <label className="text-sm">
+            Especialidad:
+            <select
+              className="ml-2 border rounded px-2 py-1"
+              value={specialtyId}
+              onChange={(e) => setSpecialtyId(e.target.value)}
+            >
+              <option value="">Todas</option>
+              {specialties.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <span className="text-sm text-gray-600">
             {loadingData ? 'Cargando…' : `${workers.length} resultados`}
           </span>
@@ -185,7 +224,7 @@ export default function NearbyMap({ auth }) {
       {/* Layout: mapa izquierda, lista derecha */}
       <div className="max-w-7xl mx-auto px-4 py-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Mapa (ocupa 2/3 en desktop) */}
+          {/* Mapa (2/3 en desktop) */}
           <div className="lg:col-span-2">
             <div
               id="nearby-map"
@@ -221,7 +260,8 @@ export default function NearbyMap({ auth }) {
                         )}
                         {(w.city || w.province) && (
                           <div className="text-xs text-gray-500">
-                            {w.city}{w.province ? `, ${w.province}` : ''}
+                            {w.city}
+                            {w.province ? `, ${w.province}` : ''}
                           </div>
                         )}
                       </div>
