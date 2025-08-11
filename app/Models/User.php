@@ -63,4 +63,9 @@ class User extends Authenticatable
             'accuracy_m'        => 'decimal:2',
         ];
     }
+
+    public function worker()
+    {
+        return $this->hasOne(\App\Models\Worker::class);
+    }
 }

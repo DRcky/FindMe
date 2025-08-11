@@ -13,9 +13,22 @@ return new class extends Migration
     {
         Schema::create('workers', function (Blueprint $table) {
             $table->id();
-            $table->enum('status', ['Active', 'Inactive'])->default('Active');
-            $table->foreignId('user_id')->nullable()->constrained('users')->cascadeOnDelete()->cascadeOnUpdate();
-            $table->foreignId('specialty_id')->nullable()->constrained('specialties')->nullOnDelete()->cascadeOnUpdate();
+
+            // Relación con usuario
+            $table->foreignId('user_id')->constrained()->onDelete('cascade')->unique();
+
+            // Estado del trabajador
+            $table->string('status', 50)->default('Active');
+
+            // Especialidad
+            $table->foreignId('specialty_id')->nullable()->constrained()->nullOnDelete();
+
+            // (Opcional) Ubicación precisa si quieres guardarla aquí
+            // $table->decimal('latitude', 10, 7)->nullable();
+            // $table->decimal('longitude', 10, 7)->nullable();
+
+            // Marcas de tiempo
+            $table->timestamps();
         });
     }
 

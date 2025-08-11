@@ -18,9 +18,11 @@ export default function Dashboard() {
                         <div className="p-6 text-gray-900">
                             You're logged in!
                         </div>
-                    </div>
+                        <a href={route('workers.become.create')}>Convertirme</a>
+                       
                 </div>
             </div>
-        </AuthenticatedLayout>
+        </div>
+        </AuthenticatedLayout >
     );
 }

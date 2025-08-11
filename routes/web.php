@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\WorkerController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -22,6 +23,17 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+     // Mostrar formulario para elegir especialidad
+    
+
+    // Guardar: convertir a trabajador
+    Route::post('/workers/become', [WorkerController::class, 'store'])
+        ->name('workers.become.store');
 });
+
+Route::get('/workers/become', [WorkerController::class, 'create'])
+        ->name('workers.become.create');
+
 
 require __DIR__.'/auth.php';

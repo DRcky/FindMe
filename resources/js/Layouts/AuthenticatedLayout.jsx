@@ -61,18 +61,23 @@ export default function AuthenticatedLayout({ header, children }) {
                                     </Dropdown.Trigger>
 
                                     <Dropdown.Content>
+
                                         <Dropdown.Link
                                             href={route('profile.edit')}
                                         >
-                                            Profile
+                                            Perfil
                                         </Dropdown.Link>
+
+                                        <a href={route('workers.become.create')}>Convertirme</a>
+
                                         <Dropdown.Link
                                             href={route('logout')}
                                             method="post"
                                             as="button"
                                         >
-                                            Log Out
+                                            Cerrar sesión
                                         </Dropdown.Link>
+
                                     </Dropdown.Content>
                                 </Dropdown>
                             </div>
