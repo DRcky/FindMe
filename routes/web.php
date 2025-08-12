@@ -32,7 +32,7 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('auth')->get('/workers/map', fn() => inertia('Workers/NearbyMap'))
         ->name('workers.map');
-        
+
     // Guardar: convertir a trabajador
     Route::post('/workers/become', [WorkerController::class, 'store'])
         ->name('workers.become.store');
@@ -40,12 +40,20 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware('auth')->get('/workers/map', function () {
     return inertia('Workers/NearbyMap', [
-        'specialties' => Specialty::orderBy('name')->get(['id','name']),
+        'specialties' => Specialty::orderBy('name')->get(['id', 'name']),
     ]);
 })->name('workers.map');
 
 Route::middleware('auth')->get('/workers/{worker}', [WorkerController::class, 'show'])
     ->name('workers.show');
+
+Route::middleware('auth')->get('/workers/{worker}', [WorkerController::class, 'show'])
+    ->name('workers.show');
+
+Route::middleware('auth')->group(function () {
+    Route::post('/workers/{worker}/reviews', [\App\Http\Controllers\ReviewController::class, 'store'])
+        ->name('reviews.store');
+});
 
 
 require __DIR__ . '/auth.php';

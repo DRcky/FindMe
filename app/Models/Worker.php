@@ -16,4 +16,8 @@ class Worker extends Model
     {
         return $this->belongsTo(\App\Models\Specialty::class);
     }
+    public function reviews()
+    {
+        return $this->hasMany(\App\Models\Review::class);
+    }
 }
