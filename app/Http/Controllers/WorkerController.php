@@ -47,4 +47,12 @@ class WorkerController extends Controller
 
         return redirect()->route('dashboard')->with('status', '¡Listo! Te convertiste en trabajador.');
     }
+
+     public function show(Worker $worker)
+    {
+        $worker->load('user', 'specialty'); // Relación con usuario y especialidad
+        return Inertia::render('Workers/Profile', [
+            'worker' => $worker,
+        ]);
+    }
 }

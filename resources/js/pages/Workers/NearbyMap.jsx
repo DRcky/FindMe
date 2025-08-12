@@ -1,9 +1,10 @@
 // resources/js/Pages/Workers/NearbyMap.jsx
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
 
 // Fix de iconos Leaflet (Vite)
 import marker2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -245,9 +246,8 @@ export default function NearbyMap({ auth, specialties = [] }) {
                 {workers.map((w) => (
                   <li
                     key={w.worker_id}
-                    className={`p-3 cursor-pointer hover:bg-gray-50 ${
-                      selectedId === w.worker_id ? 'bg-indigo-50' : ''
-                    }`}
+                    className={`p-3 cursor-pointer hover:bg-gray-50 ${selectedId === w.worker_id ? 'bg-indigo-50' : ''
+                      }`}
                     onClick={() => focusWorker(w)}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -275,6 +275,12 @@ export default function NearbyMap({ auth, specialties = [] }) {
                     {w.phone && (
                       <div className="text-xs text-gray-600 mt-1">Tel: {w.phone}</div>
                     )}
+                    <Link
+                      href={route('workers.show', w.worker_id)}
+                      className="text-xs text-blue-600 underline mt-1 block"
+                    >
+                      Ver perfil
+                    </Link>
                   </li>
                 ))}
               </ul>

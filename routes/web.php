@@ -44,5 +44,8 @@ Route::middleware('auth')->get('/workers/map', function () {
     ]);
 })->name('workers.map');
 
+Route::middleware('auth')->get('/workers/{worker}', [WorkerController::class, 'show'])
+    ->name('workers.show');
+
 
 require __DIR__ . '/auth.php';
