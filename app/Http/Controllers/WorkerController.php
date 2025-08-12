@@ -49,9 +49,13 @@ class WorkerController extends Controller
         return redirect()->route('dashboard')->with('status', '¡Listo! Te convertiste en trabajador.');
     }
 
-      public function show(Worker $worker)
+    public function show(Worker $worker)
     {
-        $worker->load(['user','specialty']);
+        $worker->load('user:id,first_name,last_name,phone,email,city,province', 'specialty:id,name');
+
+        // Asegura que user_id esté presente (no oculto)
+        // (Por defecto no está oculto, pero por si acaso)
+        $worker->makeVisible('user_id');
 
         // Métricas
         $stats = Review::where('worker_id', $worker->id)
@@ -68,8 +72,8 @@ class WorkerController extends Controller
                     'id'        => $r->id,
                     'rating'    => (int) $r->rating,
                     'comment'   => $r->comment,
-                    'author'    => $r->user?->first_name.' '.($r->user?->last_name ?? ''),
-                    'created_at'=> optional($r->created_at)->toDateString(),
+                    'author'    => $r->user?->first_name . ' ' . ($r->user?->last_name ?? ''),
+                    'created_at' => optional($r->created_at)->toDateString(),
                 ];
             });
 
