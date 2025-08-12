@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\HireController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WorkerController;
 use App\Models\Specialty;
@@ -55,5 +56,12 @@ Route::middleware('auth')->group(function () {
         ->name('reviews.store');
 });
 
+Route::middleware('auth')->group(function () {
+    Route::post('/workers/{worker}/hire', [HireController::class, 'store'])->name('hires.store'); // botón "Contratar"
+    Route::post('/hires/{hire}/accept', [HireController::class, 'accept'])->name('hires.accept');
+    Route::post('/hires/{hire}/reject', [HireController::class, 'reject'])->name('hires.reject');
+
+    Route::get('/hires', [HireController::class, 'index'])->name('hires.index'); // listas
+});
 
 require __DIR__ . '/auth.php';

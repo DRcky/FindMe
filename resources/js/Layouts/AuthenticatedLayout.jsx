@@ -81,6 +81,9 @@ export default function AuthenticatedLayout({ header, children }) {
                                         </Dropdown.Link>
 
 
+                                        <Dropdown.Link href={route('hires.index')} className="block px-4 py-2 text-sm hover:bg-gray-100">
+                                            Mis contrataciones
+                                        </Dropdown.Link>
 
 
                                         <Dropdown.Link
