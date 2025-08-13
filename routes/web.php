@@ -3,10 +3,16 @@
 use App\Http\Controllers\HireController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WorkerController;
+use App\Models\Hire;
+use App\Models\Review;
 use App\Models\Specialty;
+use App\Models\Worker;
+use Illuminate\Http\Request;
+use Illuminate\Container\Attributes\Auth;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -65,5 +71,34 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/hires', [HireController::class, 'index'])->name('hires.index'); // listas
 });
+
+Route::middleware('auth')->get('/dashboard', function (Request $request) {
+    $user = $request->user(); // ✅ nunca requiere Auth::..., y no será null por el middleware
+
+    // métricas
+    $isWorker    = Worker::where('user_id', $user->id)->exists();
+    $myPending   = Hire::where('client_id', $user->id)->where('status', 'pending')->count();
+    $myAccepted  = Hire::where('client_id', $user->id)->where('status', 'accepted')->count();
+    $myCompleted = Hire::where('client_id', $user->id)->where('status', 'completed')->count();
+    $toMePending = $isWorker
+        ? Hire::whereHas('worker', fn($q) => $q->where('user_id', $user->id))
+        ->where('status', 'pending')->count()
+        : 0;
+    $myReviews   = $isWorker
+        ? Review::whereHas('worker', fn($q) => $q->where('user_id', $user->id))->count()
+        : 0;
+
+    return inertia('Dashboard', [
+        'logoUrl'  => asset('images/logo.png'),
+        'isWorker' => $isWorker,
+        'metrics'  => [
+            'myPending'   => $myPending,
+            'myAccepted'  => $myAccepted,
+            'myCompleted' => $myCompleted,
+            'toMePending' => $toMePending,
+            'myReviews'   => $myReviews,
+        ],
+    ]);
+})->name('dashboard');
 
 require __DIR__ . '/auth.php';
