@@ -60,6 +60,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/workers/{worker}/hire', [HireController::class, 'store'])->name('hires.store'); // botón "Contratar"
     Route::post('/hires/{hire}/accept', [HireController::class, 'accept'])->name('hires.accept');
     Route::post('/hires/{hire}/reject', [HireController::class, 'reject'])->name('hires.reject');
+    Route::post('/hires/{hire}/cancel', [HireController::class, 'cancel'])->name('hires.cancel');
+    Route::post('/hires/{hire}/complete', [HireController::class, 'complete'])->name('hires.complete');
 
     Route::get('/hires', [HireController::class, 'index'])->name('hires.index'); // listas
 });

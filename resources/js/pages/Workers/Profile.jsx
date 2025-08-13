@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 
-// --- Componentes de estrellas ---
+// --- Estrellas de solo lectura ---
 function Stars({ value = 0, size = 16 }) {
   return (
     <div className="inline-flex">
@@ -21,6 +21,7 @@ function Stars({ value = 0, size = 16 }) {
   );
 }
 
+// --- Estrellas clicables para el formulario ---
 function StarsInput({ value, onChange }) {
   return (
     <div className="inline-flex items-center gap-1">
@@ -47,14 +48,26 @@ function StarsInput({ value, onChange }) {
   );
 }
 
-// --- Página de Perfil ---
-export default function Profile({ auth, worker, stats, reviews, isOwner }) {
+export default function Profile({ auth, worker, stats, reviews, isOwner, client_hire }) {
   const { props } = usePage();
 
-  // Si no pasaste isOwner desde el backend, lo calculamos aquí
-  const computedIsOwner = typeof isOwner === 'boolean' ? isOwner : auth?.user?.id === worker?.user_id;
+  // Si no pasaron isOwner desde el backend, lo calculamos aquí
+  const computedIsOwner =
+    typeof isOwner === 'boolean' ? isOwner : auth?.user?.id === worker?.user_id;
 
-  // Form para reseña
+  // --------- Contrataciones (botón dinámico) ----------
+  const hire = client_hire; // { id, status, ... } o null
+
+  const startHire = () => router.post(route('hires.store', worker.id));
+  const goToHires = () => router.visit(route('hires.index'));
+  const cancelHire = () => {
+    if (!hire) return;
+    if (confirm('¿Seguro que quieres cancelar la solicitud?')) {
+      router.post(route('hires.cancel', hire.id), {}, { preserveScroll: true });
+    }
+  };
+
+  // --------- Formulario de reseña ----------
   const { data, setData, post, processing, errors, reset } = useForm({
     rating: 0,
     comment: '',
@@ -69,10 +82,6 @@ export default function Profile({ auth, worker, stats, reviews, isOwner }) {
         setData('rating', 0);
       },
     });
-  };
-
-  const hireWorker = () => {
-    router.post(route('hires.store', worker.id));
   };
 
   return (
@@ -105,24 +114,91 @@ export default function Profile({ auth, worker, stats, reviews, isOwner }) {
           <div className="mt-3 flex items-center gap-2">
             <Stars value={Math.round(stats?.avg_rating ?? 0)} />
             <span className="text-sm text-gray-600">
-              {stats?.avg_rating ? `${stats.avg_rating} / 5` : 'Sin calificaciones'} · {stats?.total ?? 0} reseña(s)
+              {stats?.avg_rating ? `${stats.avg_rating} / 5` : 'Sin calificaciones'} ·{' '}
+              {stats?.total ?? 0} reseña(s)
             </span>
           </div>
 
-          {/* Botón CONTRATAR: solo si NO eres el dueño del perfil */}
+          {/* BOTONES SEGÚN ESTADO (no mostrar si es su propio perfil) */}
           {!computedIsOwner && (
-            <button
-              onClick={hireWorker}
-              className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
-            >
-              Contratar
-            </button>
+            <>
+              {!hire && (
+                <button
+                  onClick={startHire}
+                  className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                >
+                  Contratar
+                </button>
+              )}
+
+              {hire?.status === 'pending' && (
+                <div className="mt-4 flex items-center gap-2">
+                  <button
+                    disabled
+                    className="px-4 py-2 bg-amber-500 text-white rounded opacity-90"
+                    title="Tu solicitud está pendiente"
+                  >
+                    Solicitud enviada (Pendiente)
+                  </button>
+                  <button
+                    onClick={cancelHire}
+                    className="px-3 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+
+              {hire?.status === 'accepted' && (
+                <div className="mt-4 flex items-center gap-2">
+                  <span className="inline-flex items-center px-3 py-2 bg-emerald-100 text-emerald-700 rounded">
+                    Contratado ✔
+                  </span>
+                  <button
+                    onClick={goToHires}
+                    className="px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                  >
+                    Ver contrataciones
+                  </button>
+                </div>
+              )}
+
+              {hire?.status === 'rejected' && (
+                <div className="mt-4 flex items-center gap-2">
+                  <span className="inline-flex items-center px-3 py-2 bg-red-100 text-red-700 rounded">
+                    Solicitud rechazada
+                  </span>
+                  <button
+                    onClick={startHire}
+                    className="px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                  >
+                    Volver a solicitar
+                  </button>
+                </div>
+              )}
+
+              {hire?.status === 'cancelled' && (
+                <div className="mt-4 flex items-center gap-2">
+                  <span className="inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded">
+                    Solicitud cancelada
+                  </span>
+                  <button
+                    onClick={startHire}
+                    className="px-3 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                  >
+                    Volver a solicitar
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
-          {props.flash?.status && <div className="mt-3 text-sm text-green-700">{props.flash.status}</div>}
+          {props.flash?.status && (
+            <div className="mt-3 text-sm text-green-700">{props.flash.status}</div>
+          )}
         </div>
 
-        {/* Escribir reseña (evitar que el propio especialista se reseñe) */}
+        {/* Escribir reseña (ocúltalo si es su propio perfil) */}
         {!computedIsOwner && (
           <div className="bg-white rounded shadow p-5">
             <h2 className="text-lg font-semibold mb-3">Escribir una reseña</h2>
@@ -130,7 +206,9 @@ export default function Profile({ auth, worker, stats, reviews, isOwner }) {
               <div>
                 <label className="block text-sm font-medium mb-1">Calificación</label>
                 <StarsInput value={data.rating} onChange={(v) => setData('rating', v)} />
-                {errors.rating && <div className="text-sm text-red-600 mt-1">{errors.rating}</div>}
+                {errors.rating && (
+                  <div className="text-sm text-red-600 mt-1">{errors.rating}</div>
+                )}
               </div>
 
               <div>
@@ -142,7 +220,9 @@ export default function Profile({ auth, worker, stats, reviews, isOwner }) {
                   placeholder="Cuéntanos tu experiencia…"
                   maxLength={2000}
                 />
-                {errors.comment && <div className="text-sm text-red-600 mt-1">{errors.comment}</div>}
+                {errors.comment && (
+                  <div className="text-sm text-red-600 mt-1">{errors.comment}</div>
+                )}
               </div>
 
               <button

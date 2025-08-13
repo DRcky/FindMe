@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Hire;
 use App\Models\Review;
 use App\Models\Worker;
 use App\Models\Specialty;
@@ -9,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+
 
 class WorkerController extends Controller
 {
@@ -49,15 +51,29 @@ class WorkerController extends Controller
         return redirect()->route('dashboard')->with('status', '¡Listo! Te convertiste en trabajador.');
     }
 
-    public function show(Worker $worker)
+    public function show(Request $request, Worker $worker)
     {
-        $worker->load('user:id,first_name,last_name,phone,email,city,province', 'specialty:id,name');
-
-        // Asegura que user_id esté presente (no oculto)
-        // (Por defecto no está oculto, pero por si acaso)
+        // Carga relaciones mínimas para el perfil
+        $worker->load([
+            'user:id,first_name,last_name,phone,email,city,province',
+            'specialty:id,name',
+        ]);
+        // Asegúrate de poder leer user_id en el front
         $worker->makeVisible('user_id');
 
-        // Métricas
+        // Usuario actual (o null si invitado)
+        $userId = Auth::id();
+
+        // Contratación actual del usuario hacia este worker (si hay sesión)
+        $currentHire = null;
+        if ($userId) {
+            $currentHire = Hire::where('worker_id', $worker->id)
+                ->where('client_id', $userId)
+                ->latest('id')
+                ->first(['id','status','created_at','accepted_at','rejected_at','worker_id']);
+        }
+
+        // Métricas de reseñas
         $stats = Review::where('worker_id', $worker->id)
             ->selectRaw('COUNT(*) as total, AVG(rating) as avg_rating')
             ->first();
@@ -69,21 +85,23 @@ class WorkerController extends Controller
             ->paginate(10)
             ->through(function ($r) {
                 return [
-                    'id'        => $r->id,
-                    'rating'    => (int) $r->rating,
-                    'comment'   => $r->comment,
-                    'author'    => $r->user?->first_name . ' ' . ($r->user?->last_name ?? ''),
+                    'id'         => $r->id,
+                    'rating'     => (int) $r->rating,
+                    'comment'    => $r->comment,
+                    'author'     => trim(($r->user->first_name ?? '').' '.($r->user->last_name ?? '')),
                     'created_at' => optional($r->created_at)->toDateString(),
                 ];
             });
 
         return Inertia::render('Workers/Profile', [
-            'worker'  => $worker,
-            'stats'   => [
+            'worker'      => $worker,
+            'stats'       => [
                 'total'      => (int) ($stats->total ?? 0),
                 'avg_rating' => $stats->avg_rating ? round($stats->avg_rating, 2) : null,
             ],
-            'reviews' => $reviews,
+            'reviews'     => $reviews,
+            'isOwner'     => $userId ? $userId === $worker->user_id : false,
+            'client_hire' => $currentHire, // {id,status,...} o null
         ]);
     }
 }
