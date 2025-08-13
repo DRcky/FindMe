@@ -21,6 +21,9 @@ Route::get('/reverse-geocode', [GeoController::class, 'reverse'])
 
 Route::get('/nearby-workers', [WorkerNearbyController::class, 'index'])->name('api.nearby-workers');
 
+Route::get('/workers/nearby', [WorkerNearbyController::class, 'index'])
+    ->name('api.workers.nearby');
+    
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });

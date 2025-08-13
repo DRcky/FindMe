@@ -40,10 +40,14 @@ Route::middleware('auth')->group(function () {
     Route::middleware('auth')->get('/workers/map', fn() => inertia('Workers/NearbyMap'))
         ->name('workers.map');
 
+    Route::get('/workers/become', [WorkerController::class, 'create'])
+        ->name('workers.become');
+
     // Guardar: convertir a trabajador
     Route::post('/workers/become', [WorkerController::class, 'store'])
         ->name('workers.become.store');
 });
+
 
 Route::middleware('auth')->get('/workers/map', function () {
     return inertia('Workers/NearbyMap', [

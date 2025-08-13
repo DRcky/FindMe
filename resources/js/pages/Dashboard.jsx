@@ -4,35 +4,55 @@ import { Head, Link, usePage, router } from '@inertiajs/react';
 
 function classNames(...c) { return c.filter(Boolean).join(' '); }
 
-export default function Dashboard({ auth, logoUrl = '/images/logo.png', metrics = {}, isWorker = false }) {
+export default function Dashboard({
+  auth,
+  logoUrl = '/images/logo.png',
+  metrics = {},
+  isWorker = false,
+}) {
   const { props } = usePage();
 
-  // Paleta tomada del logo
+  // Paleta (colores del logo)
   const brand = {
-    light: '#BFE7FF',      // celeste claro
-    dark:  '#1B4B6B',      // azul profundo
-    mid:   '#2F6F94',      // azul medio
-    accent:'#F39A1A',      // naranja casco
+    light: '#BFE7FF',
+    dark:  '#1B4B6B',
+    mid:   '#2F6F94',
+    accent:'#F39A1A',
   };
 
+  // Métricas con defaults
   const m = {
-    myPending: metrics.myPending ?? 0,            // mis solicitudes como cliente (pending)
-    myAccepted: metrics.myAccepted ?? 0,          // como cliente (accepted)
-    myCompleted: metrics.myCompleted ?? 0,        // como cliente (completed)
-    toMePending: metrics.toMePending ?? 0,        // solicitudes que me llegan como especialista (pending)
-    myReviews: metrics.myReviews ?? 0,            // reseñas recibidas (si soy worker)
+    myPending:   metrics.myPending ?? 0,
+    myAccepted:  metrics.myAccepted ?? 0,
+    myCompleted: metrics.myCompleted ?? 0,
+    toMePending: metrics.toMePending ?? 0,
+    myReviews:   metrics.myReviews ?? 0,
   };
 
+  // Notificaciones (si tu middleware las pasa en props)
   const unread = props.notifications?.unread_count ?? 0;
   const latest = props.notifications?.latest ?? [];
 
-  const markAllRead = () => router.post(route('notifications.readAll'), {}, { preserveScroll: true });
+  // Helpers Ziggy: evita errores si la ruta no existe
+  const hasRoute = (name) =>
+    typeof route === 'function' && route().has && route().has(name);
+
+  const markAllRead = () => {
+    const r = hasRoute('notifications.readAll') ? route('notifications.readAll') : null;
+    if (!r) return;
+    router.post(r, {}, { preserveScroll: true });
+  };
+
+  const goMap = () => router.visit(hasRoute('workers.map') ? route('workers.map') : '/workers/map');
+  const goHires = () => router.visit(hasRoute('hires.index') ? route('hires.index') : '/hires');
+  const goProfile = () => router.visit(hasRoute('profile.edit') ? route('profile.edit') : '/profile');
+  const goBecome = () => router.visit(hasRoute('workers.become') ? route('workers.become') : '/workers/become');
 
   return (
     <AuthenticatedLayout user={auth.user}>
       <Head title="Dashboard" />
 
-      {/* Hero / Encabezado */}
+      {/* Encabezado / Hero */}
       <div className="relative overflow-hidden">
         <div
           className="absolute inset-0 -z-10 opacity-30"
@@ -56,13 +76,13 @@ export default function Dashboard({ auth, logoUrl = '/images/logo.png', metrics 
               </p>
             </div>
             <div className="hidden sm:block">
-              <Link
-                href={route('workers.map')}
+              <button
+                onClick={goMap}
                 className="inline-flex items-center px-5 py-3 rounded-lg font-semibold text-white shadow hover:shadow-lg transition"
                 style={{ backgroundColor: brand.accent }}
               >
                 Explorar mapa
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -71,51 +91,51 @@ export default function Dashboard({ auth, logoUrl = '/images/logo.png', metrics 
       {/* Acciones rápidas */}
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <Link
-            href={route('workers.map')}
-            className="bg-white rounded-xl border hover:shadow-md transition p-4"
+          <button
+            onClick={goMap}
+            className="text-left bg-white rounded-xl border hover:shadow-md transition p-4"
           >
             <div className="text-sm text-gray-600">Buscar</div>
             <div className="mt-1 font-semibold" style={{ color: brand.mid }}>Especialistas cercanos</div>
             <div className="mt-2 text-xs text-gray-500">Mapa con filtros por especialidad y radio</div>
-          </Link>
+          </button>
 
-          <Link
-            href={route('hires.index')}
-            className="bg-white rounded-xl border hover:shadow-md transition p-4"
+          <button
+            onClick={goHires}
+            className="text-left bg-white rounded-xl border hover:shadow-md transition p-4"
           >
             <div className="text-sm text-gray-600">Contrataciones</div>
             <div className="mt-1 font-semibold" style={{ color: brand.mid }}>Mis solicitudes</div>
             <div className="mt-2 text-xs text-gray-500">Revisa estados: pendiente, aceptado, completado</div>
-          </Link>
+          </button>
 
-          <Link
-            href={route('profile.edit')}
-            className="bg-white rounded-xl border hover:shadow-md transition p-4"
+          <button
+            onClick={goProfile}
+            className="text-left bg-white rounded-xl border hover:shadow-md transition p-4"
           >
             <div className="text-sm text-gray-600">Perfil</div>
             <div className="mt-1 font-semibold" style={{ color: brand.mid }}>Editar mis datos</div>
             <div className="mt-2 text-xs text-gray-500">Nombre, contacto y ubicación</div>
-          </Link>
+          </button>
 
           {!isWorker ? (
-            <Link
-              href={route('workers.become')} // tu ruta "convertirse en especialista"
-              className="bg-white rounded-xl border hover:shadow-md transition p-4"
+            <button
+              onClick={goBecome}
+              className="text-left bg-white rounded-xl border hover:shadow-md transition p-4"
             >
               <div className="text-sm text-gray-600">¿Eres especialista?</div>
               <div className="mt-1 font-semibold" style={{ color: brand.mid }}>Publica tus servicios</div>
               <div className="mt-2 text-xs text-gray-500">Elige especialidad y empieza a recibir solicitudes</div>
-            </Link>
+            </button>
           ) : (
-            <Link
-              href={route('hires.index')}
-              className="bg-white rounded-xl border hover:shadow-md transition p-4"
+            <button
+              onClick={goHires}
+              className="text-left bg-white rounded-xl border hover:shadow-md transition p-4"
             >
               <div className="text-sm text-gray-600">Como especialista</div>
               <div className="mt-1 font-semibold" style={{ color: brand.mid }}>Solicitudes para mí</div>
               <div className="mt-2 text-xs text-gray-500">Acepta, rechaza o completa trabajos</div>
-            </Link>
+            </button>
           )}
         </div>
       </div>
@@ -130,7 +150,7 @@ export default function Dashboard({ auth, logoUrl = '/images/logo.png', metrics 
         </div>
       </div>
 
-      {/* Dos columnas: Notificaciones + Siguientes pasos */}
+      {/* Notificaciones + Siguientes pasos */}
       <div className="max-w-7xl mx-auto px-4 mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Notificaciones */}
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border">
@@ -139,13 +159,15 @@ export default function Dashboard({ auth, logoUrl = '/images/logo.png', metrics 
               <div className="text-lg font-semibold" style={{ color: brand.dark }}>Notificaciones</div>
               <div className="text-xs text-gray-500">{unread} sin leer</div>
             </div>
-            <button
-              onClick={markAllRead}
-              className="text-sm px-3 py-1 rounded border hover:bg-gray-50"
-              style={{ borderColor: brand.mid, color: brand.mid }}
-            >
-              Marcar como leídas
-            </button>
+            {hasRoute('notifications.readAll') && (
+              <button
+                onClick={markAllRead}
+                className="text-sm px-3 py-1 rounded border hover:bg-gray-50"
+                style={{ borderColor: brand.mid, color: brand.mid }}
+              >
+                Marcar como leídas
+              </button>
+            )}
           </div>
           <div className="divide-y">
             {latest.length === 0 ? (
@@ -158,6 +180,8 @@ export default function Dashboard({ auth, logoUrl = '/images/logo.png', metrics 
                 <div className="text-xs text-gray-500 mt-1">
                   {n.data?.type === 'hire.requested' && 'Nueva solicitud de contratación'}
                   {n.data?.type === 'hire.accepted' && 'Tu solicitud fue aceptada'}
+                  {n.data?.type === 'hire.rejected' && 'Tu solicitud fue rechazada'}
+                  {n.data?.type === 'hire.completed' && 'Trabajo marcado como completado'}
                 </div>
                 <div className="text-xs text-gray-400 mt-1">{n.created_at}</div>
               </div>
@@ -165,7 +189,7 @@ export default function Dashboard({ auth, logoUrl = '/images/logo.png', metrics 
           </div>
         </div>
 
-        {/* Siguientes pasos / Tips */}
+        {/* Siguientes pasos */}
         <aside className="bg-white rounded-xl shadow-sm border p-4">
           <h3 className="text-lg font-semibold mb-2" style={{ color: brand.dark }}>Siguientes pasos</h3>
           <ul className="space-y-3 text-sm">
@@ -178,29 +202,29 @@ export default function Dashboard({ auth, logoUrl = '/images/logo.png', metrics 
             <li className="flex gap-2">
               <span className="mt-1 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: brand.accent }} />
               <span>
-                Completa tu <Link href={route('profile.edit')} className="underline" style={{ color: brand.mid }}>perfil</Link> con teléfono y ciudad.
+                Completa tu <button onClick={goProfile} className="underline" style={{ color: brand.mid }}>perfil</button> con teléfono y ciudad.
               </span>
             </li>
             {isWorker ? (
               <li className="flex gap-2">
                 <span className="mt-1 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: brand.accent }} />
-                <span>Revisa <Link href={route('hires.index')} className="underline" style={{ color: brand.mid }}>solicitudes pendientes</Link> y marca trabajos como <span className="font-medium">completados</span>.</span>
+                <span>Revisa <button onClick={goHires} className="underline" style={{ color: brand.mid }}>solicitudes pendientes</button> y marca trabajos como <span className="font-medium">completados</span>.</span>
               </li>
             ) : (
               <li className="flex gap-2">
                 <span className="mt-1 w-2.5 h-2.5 rounded-full" style={{ backgroundColor: brand.accent }} />
-                <span>¿Eres especialista? <Link href={route('workers.become')} className="underline" style={{ color: brand.mid }}>Publica tus servicios</Link> y empieza a recibir contrataciones.</span>
+                <span>¿Eres especialista? <button onClick={goBecome} className="underline" style={{ color: brand.mid }}>Publica tus servicios</button> y empieza a recibir contrataciones.</span>
               </li>
             )}
           </ul>
           <div className="mt-4">
-            <Link
-              href={route('workers.map')}
+            <button
+              onClick={goMap}
               className="inline-flex items-center px-4 py-2 rounded-lg font-semibold text-white shadow hover:shadow-md transition"
               style={{ backgroundColor: brand.accent }}
             >
               Ir al mapa
-            </Link>
+            </button>
           </div>
         </aside>
       </div>
