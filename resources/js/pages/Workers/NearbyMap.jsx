@@ -10,7 +10,7 @@ import 'leaflet/dist/leaflet.css';
 // Opción con imports (Vite empaca las imágenes)
 import marker2x from 'leaflet/dist/images/marker-icon-2x.png';
 import marker1x from 'leaflet/dist/images/marker-icon.png';
-import shadow   from 'leaflet/dist/images/marker-shadow.png';
+import shadow from 'leaflet/dist/images/marker-shadow.png';
 
 const defaultIcon = L.icon({
   iconRetinaUrl: marker2x,
@@ -25,13 +25,13 @@ const defaultIcon = L.icon({
 // Helpers
 function classNames(...c) { return c.filter(Boolean).join(' '); }
 function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
-function escapeHtml(str='') {
+function escapeHtml(str = '') {
   return String(str)
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'",'&#39;');
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 function explainGeoError(err) {
   if (!err || typeof err.code !== 'number') return 'No pudimos obtener tu ubicación.';
@@ -49,9 +49,9 @@ export default function NearbyMap({ auth, specialties = [] }) {
   // Paleta (colores del logo)
   const brand = {
     light: '#BFE7FF',
-    dark:  '#1B4B6B',
-    mid:   '#2F6F94',
-    accent:'#F39A1A',
+    dark: '#1B4B6B',
+    mid: '#2F6F94',
+    accent: '#F39A1A',
   };
 
   // Estado
@@ -62,6 +62,7 @@ export default function NearbyMap({ auth, specialties = [] }) {
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+  const [isLocating, setIsLocating] = useState(false);
 
   // Refs Leaflet
   const mapEl = useRef(null);
@@ -172,11 +173,11 @@ export default function NearbyMap({ auth, specialties = [] }) {
       const mapped = (Array.isArray(data) ? data : (data.data || [])).map((w) => {
         const id = w.worker_id ?? w.id;
         const first = w.user?.first_name ?? w.first_name ?? '';
-        const last  = w.user?.last_name ?? w.last_name ?? '';
-        const name  = `${first} ${last}`.trim() || 'Especialista';
-        const latW  = w.lat ?? w.latitude;
-        const lngW  = w.lng ?? w.longitude;
-        const dist  = typeof w.distance_km !== 'undefined' ? Number(w.distance_km) : null;
+        const last = w.user?.last_name ?? w.last_name ?? '';
+        const name = `${first} ${last}`.trim() || 'Especialista';
+        const latW = w.lat ?? w.latitude;
+        const lngW = w.lng ?? w.longitude;
+        const dist = typeof w.distance_km !== 'undefined' ? Number(w.distance_km) : null;
         const specN = w.specialty?.name ?? w.specialty_name ?? '';
         return { id, name, lat: latW, lng: lngW, distance_km: dist, specialty_name: specN };
       });
@@ -191,7 +192,7 @@ export default function NearbyMap({ auth, specialties = [] }) {
           <div style="min-width:180px">
             <div style="font-weight:600;color:${brand.dark}">${escapeHtml(w.name)}</div>
             ${w.specialty_name ? `<div style="font-size:12px;color:#475569">${escapeHtml(w.specialty_name)}</div>` : ''}
-            ${w.distance_km!=null ? `<div style="font-size:12px;color:#475569;margin-top:4px">A ${w.distance_km.toFixed(1)} km</div>` : ''}
+            ${w.distance_km != null ? `<div style="font-size:12px;color:#475569;margin-top:4px">A ${w.distance_km.toFixed(1)} km</div>` : ''}
             <div style="margin-top:8px">
               <a href="${profileUrl}" style="background:${brand.accent};color:#fff;padding:6px 10px;border-radius:8px;text-decoration:none;">Ver perfil</a>
             </div>
@@ -213,6 +214,8 @@ export default function NearbyMap({ auth, specialties = [] }) {
       return;
     }
     setErr('');
+    setIsLocating(true); // <-- empieza animación
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const { latitude, longitude } = pos.coords;
@@ -222,14 +225,17 @@ export default function NearbyMap({ auth, specialties = [] }) {
           userMarkerRef.current?.setLatLng([latitude, longitude]);
           circleRef.current?.setLatLng([latitude, longitude]);
         }
+        setIsLocating(false); // <-- termina animación (éxito)
       },
       (error) => {
         setErr(explainGeoError(error));
         console.error('Geolocation error:', error);
+        setIsLocating(false); // <-- termina animación (error)
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
+
 
   return (
     <AuthenticatedLayout user={auth.user}>
@@ -266,11 +272,26 @@ export default function NearbyMap({ auth, specialties = [] }) {
         <div className="bg-white rounded-xl shadow-sm border p-4 mb-4 flex flex-wrap items-center gap-3">
           <button
             onClick={useMyLocation}
-            className="px-4 py-2 rounded-lg font-semibold text-white"
+            disabled={isLocating}
+            className={classNames(
+              "px-4 py-2 rounded-lg font-semibold text-white flex items-center",
+              isLocating && "opacity-80 cursor-wait"
+            )}
             style={{ backgroundColor: brand.accent }}
           >
-            Usar mi ubicación
+            {isLocating ? (
+              <>
+                <svg className="h-4 w-4 mr-2 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+                  <path d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" fill="currentColor" className="opacity-75" />
+                </svg>
+                Buscando...
+              </>
+            ) : (
+              "Usar mi ubicación"
+            )}
           </button>
+
 
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium" style={{ color: brand.mid }}>Radio</label>
